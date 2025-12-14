@@ -18,6 +18,26 @@
 *** DIMENSION PARAMETERS ***
 ****************************/
 
+#include <stdio.h>
+#include <string.h>
+
+
+/***************************
+******** Menu Items ********
+****************************/
+
+#define REVERSE 1
+#define PALINDROME 2
+#define SENTENCES 3
+#define ZIP 4
+#define SUDOKU 5
+#define EXIT 6
+
+
+/***************************
+*** DIMENSION PARAMETERS ***
+****************************/
+
 #define LONGEST_TERM 20
 #define LONGEST_SENTENCE 62
 #define MAX_NUMBER_OF_TERMS 10
@@ -59,7 +79,19 @@ int task5SolveSudokuImplementation(int[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE]);
 int readTerms(char[][LONGEST_TERM+1], int, char[]);
 void printSudoku(int[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE]);
 
+void generateObjectsHelper(char objects[][LONGEST_TERM + 1], char *currentSubject, char *currentVerb, int objectsCount,
+     int objectIndex, int *lineIndex);
 
+void generateVerbsHelper(char verbs[][LONGEST_TERM + 1], char objects[][LONGEST_TERM + 1], char *currentSubject, 
+    int verbsCount, int objectsCount, int verbIndex, int *lineIndex);
+
+void generateSubjectsHelper(char subjects[][LONGEST_TERM + 1], char verbs[][LONGEST_TERM + 1], 
+    char objects[][LONGEST_TERM + 1], int subjectsObject, int verbsCount, int objectsCount, int subjectIndex, 
+    int *lineIndex);
+
+int solveZipBoardHelper(int board[ZIP_MAX_GRID_SIZE][ZIP_MAX_GRID_SIZE], 
+    char solution[ZIP_MAX_GRID_SIZE][ZIP_MAX_GRID_SIZE], int size, int currentRow, int currentColumn,
+     int nextTileNumberToFind, int stepCount, int highest);
 
 /******************************
 ********** MAIN MENU **********
@@ -120,6 +152,7 @@ void task1ReversePhrase()
 {
     printf("Please insert the phrase to reverse:\n");
     task1ReversePhraseImplementation();
+
     printf("\n");
 }
 
@@ -203,8 +236,7 @@ void task4SolveZipBoard()
 }
 
 
-void task5SolveSudoku()
-{
+void task5SolveSudoku() {
     printf("Please enter the sudoku board:\n");
     int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE] = {0};
     for (int i = 0; i < SUDOKU_GRID_SIZE; i++)
@@ -229,7 +261,6 @@ void task5SolveSudoku()
 /***************************
 ********* HELPERS **********
 ****************************/
-
 
 int readTerms(char terms[][LONGEST_TERM+1], int maxNumOfTerms, char type[]){
     int termsCount;
@@ -268,18 +299,158 @@ void printSudoku(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE])
     }
 }
 
+void generateObjectsHelper(char objects[][LONGEST_TERM + 1], char *currentSubject, char *currentVerb, 
+    int objectsCount, int objectIndex, int *lineIndex) {
+        if (objectIndex == objectsCount) {
+            return;
+        }
+
+        printf("%d. %s %s %s\n", *lineIndex, currentSubject, currentVerb, objects[objectIndex]);
+        (*lineIndex)++;
+
+        generateObjectsHelper(objects, currentSubject, currentVerb, objectsCount, 
+            objectIndex + 1, lineIndex);
+    }
+
+void generateVerbsHelper(char verbs[][LONGEST_TERM + 1], char objects[][LONGEST_TERM + 1], char *currentSubject, 
+    int verbsCount, int objectsCount, int verbIndex, int *lineIndex) {
+    if (verbIndex == verbsCount) {
+        return;
+    }
+
+    generateObjectsHelper(objects, currentSubject, verbs[verbIndex], objectsCount, 
+        0, lineIndex);
+
+    generateVerbsHelper(verbs, objects, currentSubject, verbsCount, objectsCount, 
+        verbIndex + 1, lineIndex);
+}
+
+void generateSubjectsHelper(char subjects[][LONGEST_TERM + 1], char verbs[][LONGEST_TERM + 1], 
+    char objects[][LONGEST_TERM + 1], int subjectsCount, int verbsCount, int objectsCount, int subjectIndex, 
+    int *lineIndex) {
+    if (subjectIndex == subjectsCount) {
+        return;
+    }
+
+    generateVerbsHelper(verbs, objects, subjects[subjectIndex], verbsCount, objectsCount, 
+        0, lineIndex);
+
+    generateSubjectsHelper(subjects, verbs, objects, subjectsCount, verbsCount, objectsCount, 
+        subjectIndex + 1, lineIndex);
+}
+
+int solveZipBoardHelper(int board[ZIP_MAX_GRID_SIZE][ZIP_MAX_GRID_SIZE], 
+    char solution[ZIP_MAX_GRID_SIZE][ZIP_MAX_GRID_SIZE], int size, int currentRow, int currentColumn,
+    int nextTileNumberToFind, int stepCount, int highest) {
+
+    if (currentRow < 0 || currentColumn < 0 || currentColumn == size || currentRow == size) {
+        return 0;
+    }
+
+    // Return 0 if cell was already used in solution
+    if (solution[currentRow][currentColumn] != 0) {
+        return 0;
+    }
+                    
+    if (stepCount == size * size) {
+        solution[currentRow][currentColumn] = 'X';
+
+        return 1;
+    }
+
+    if (board[currentRow][currentColumn] != 0) {
+        // if the cell is not 0 but is not the next tile then this path is invalid
+        if (board[currentRow][currentColumn] != nextTileNumberToFind) {
+            return 0; 
+        }
+        
+        nextTileNumberToFind++; 
+    }
+
+    // Temporally set the cell to 1 so its "used" then neighbors wont cause infinite recursion
+    solution[currentRow][currentColumn] = 1;
+
+    // Up
+    if (solveZipBoardHelper(board, solution, size, currentRow - 1, currentColumn,
+         nextTileNumberToFind, stepCount + 1, highest)) {
+        solution[currentRow][currentColumn] = 'U';
+
+        return 1; 
+    }
+
+    // Down
+    if (solveZipBoardHelper(board, solution, size, currentRow + 1, currentColumn,
+         nextTileNumberToFind, stepCount + 1, highest)) {
+        solution[currentRow][currentColumn] = 'D';
+
+        return 1; 
+    }
+
+    // Left
+    if (solveZipBoardHelper(board, solution, size, currentRow, currentColumn - 1,
+         nextTileNumberToFind, stepCount + 1, highest)) {
+        solution[currentRow][currentColumn] = 'L';
+
+        return 1; 
+    }
+
+    // Right
+    if (solveZipBoardHelper(board, solution, size, currentRow, currentColumn + 1,
+         nextTileNumberToFind, stepCount + 1, highest)) {
+        solution[currentRow][currentColumn] = 'R';
+
+        return 1; 
+    }
+
+    // If no solution was found for current path reset cell and return 0
+    solution[currentRow][currentColumn] = 0;
+    return 0;
+}
+
 /***************************
 *********** TODO ***********
 ****************************/
 
-
 void task1ReversePhraseImplementation(){
+    char character;
 
+    scanf("%c", &character);
+
+    if (character != '\n') {
+        task1ReversePhraseImplementation();
+
+        printf("%c", character);
+    } else {
+       printf("The reversed phrase is:\n");
+    }
 }
 
 
-int task2CheckPalindromeImplementation(int length)
-{
+int task2CheckPalindromeImplementation(int length) {
+    if (length == 1) {
+        // Clear buffer when length is 1, always a palindrom
+        char redundantChar;
+        scanf("%c", &redundantChar); 
+
+        return 1;
+    }
+
+    if (length == 0) return 1;
+
+    char firstCharacter;
+    scanf("%c", &firstCharacter);
+
+    // Get the first character, then recursively check the phrase excluding first and last character
+    int isInnerCharactersInPhrasePalindrom = task2CheckPalindromeImplementation(length - 2);
+
+    // After recursively checking the middle of the phrase, compare first and last character each iteration
+    char lastCharacter;
+    scanf("%c", &lastCharacter);
+
+    if (isInnerCharactersInPhrasePalindrom == 1 && firstCharacter == lastCharacter) {
+        return 1;
+    }
+        
     return 0;
 }
 
@@ -287,14 +458,15 @@ int task2CheckPalindromeImplementation(int length)
 void task3GenerateSentencesImplementation(char subjects[][LONGEST_TERM+1], int subjectsCount,
                                             char verbs[][LONGEST_TERM+1], int verbsCount,
                                             char objects[][LONGEST_TERM+1], int objectsCount){
+    int lineIndex = 1;
 
+    generateSubjectsHelper(subjects, verbs, objects, subjectsCount, verbsCount, objectsCount, 0, &lineIndex);
 }
 
 
 int task4SolveZipBoardImplementation(int board[ZIP_MAX_GRID_SIZE][ZIP_MAX_GRID_SIZE],
                                     char solution[ZIP_MAX_GRID_SIZE][ZIP_MAX_GRID_SIZE],
-                                    int size, int startR, int startC, int highest)
-{
+                                    int size, int startR, int startC, int highest) {
     return 0;
 }
 
