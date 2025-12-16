@@ -79,19 +79,34 @@ int task5SolveSudokuImplementation(int[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE]);
 int readTerms(char[][LONGEST_TERM+1], int, char[]);
 void printSudoku(int[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE]);
 
-void generateObjectsHelper(char objects[][LONGEST_TERM + 1], char *currentSubject, char *currentVerb, int objectsCount,
-     int objectIndex, int *lineIndex);
+void generateObjectsHelper(char subjects[][LONGEST_TERM + 1], char verbs[][LONGEST_TERM + 1], 
+    char objects[][LONGEST_TERM + 1], int subjectIndex, int verbIndex, 
+    int objectsCount, int objectIndex, int lineIndex[]);
 
-void generateVerbsHelper(char verbs[][LONGEST_TERM + 1], char objects[][LONGEST_TERM + 1], char *currentSubject, 
-    int verbsCount, int objectsCount, int verbIndex, int *lineIndex);
+void generateVerbsHelper(char subjects[][LONGEST_TERM + 1], char verbs[][LONGEST_TERM + 1], 
+    char objects[][LONGEST_TERM + 1], int subjectIndex, 
+    int verbsCount, int objectsCount, int verbIndex, int lineIndex[]);
 
 void generateSubjectsHelper(char subjects[][LONGEST_TERM + 1], char verbs[][LONGEST_TERM + 1], 
     char objects[][LONGEST_TERM + 1], int subjectsObject, int verbsCount, int objectsCount, int subjectIndex, 
-    int *lineIndex);
+    int lineIndex[]);
 
 int solveZipBoardHelper(int board[ZIP_MAX_GRID_SIZE][ZIP_MAX_GRID_SIZE], 
     char solution[ZIP_MAX_GRID_SIZE][ZIP_MAX_GRID_SIZE], int size, int currentRow, int currentColumn,
      int nextTileNumberToFind, int stepCount, int highest);
+
+int checkRowRecursive(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE], int row, int number, int columnIndex);
+
+int checkColumnRecursive(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE], int column, int number, int rowIndex);
+
+int checkSquareRecursive(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE], int squareStartRow, int squareStartColumn,
+     int number, int squareIndex);
+
+int isValidCell(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE], int row, int column, int number);
+
+int tryNumbersForCellRecursive(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE], int row, int column, int numberToTry);
+
+int solveSudokuHelper(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE], int row, int column);
 
 /******************************
 ********** MAIN MENU **********
@@ -299,40 +314,42 @@ void printSudoku(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE])
     }
 }
 
-void generateObjectsHelper(char objects[][LONGEST_TERM + 1], char *currentSubject, char *currentVerb, 
-    int objectsCount, int objectIndex, int *lineIndex) {
+void generateObjectsHelper(char subjects[][LONGEST_TERM + 1], char verbs[][LONGEST_TERM + 1], 
+    char objects[][LONGEST_TERM + 1], int subjectIndex, int verbIndex, 
+    int objectsCount, int objectIndex, int lineIndex[]) {
         if (objectIndex == objectsCount) {
             return;
         }
 
-        printf("%d. %s %s %s\n", *lineIndex, currentSubject, currentVerb, objects[objectIndex]);
-        (*lineIndex)++;
+        printf("%d. %s %s %s\n", lineIndex[0], subjects[subjectIndex], verbs[verbIndex], objects[objectIndex]);
+        lineIndex[0]++;
 
-        generateObjectsHelper(objects, currentSubject, currentVerb, objectsCount, 
+        generateObjectsHelper(subjects, verbs, objects, subjectIndex, verbIndex, objectsCount, 
             objectIndex + 1, lineIndex);
     }
 
-void generateVerbsHelper(char verbs[][LONGEST_TERM + 1], char objects[][LONGEST_TERM + 1], char *currentSubject, 
-    int verbsCount, int objectsCount, int verbIndex, int *lineIndex) {
+void generateVerbsHelper(char subjects[][LONGEST_TERM + 1], char verbs[][LONGEST_TERM + 1], 
+    char objects[][LONGEST_TERM + 1], int subjectIndex, int verbsCount, int objectsCount,
+     int verbIndex, int lineIndex[]) {
     if (verbIndex == verbsCount) {
         return;
     }
 
-    generateObjectsHelper(objects, currentSubject, verbs[verbIndex], objectsCount, 
+    generateObjectsHelper(subjects, verbs, objects, subjectIndex, verbIndex, objectsCount, 
         0, lineIndex);
 
-    generateVerbsHelper(verbs, objects, currentSubject, verbsCount, objectsCount, 
+    generateVerbsHelper(subjects, verbs, objects, subjectIndex, verbsCount, objectsCount, 
         verbIndex + 1, lineIndex);
 }
 
 void generateSubjectsHelper(char subjects[][LONGEST_TERM + 1], char verbs[][LONGEST_TERM + 1], 
     char objects[][LONGEST_TERM + 1], int subjectsCount, int verbsCount, int objectsCount, int subjectIndex, 
-    int *lineIndex) {
+    int lineIndex[]) {
     if (subjectIndex == subjectsCount) {
         return;
     }
 
-    generateVerbsHelper(verbs, objects, subjects[subjectIndex], verbsCount, objectsCount, 
+    generateVerbsHelper(subjects, verbs, objects, subjectIndex, verbsCount, objectsCount, 
         0, lineIndex);
 
     generateSubjectsHelper(subjects, verbs, objects, subjectsCount, verbsCount, objectsCount, 
@@ -350,18 +367,22 @@ int solveZipBoardHelper(int board[ZIP_MAX_GRID_SIZE][ZIP_MAX_GRID_SIZE],
     // Return 0 if cell was already used in solution
     if (solution[currentRow][currentColumn] != 0) {
         return 0;
-    }
-                    
-    if (stepCount == size * size) {
-        solution[currentRow][currentColumn] = 'X';
-
-        return 1;
-    }
+    }              
 
     if (board[currentRow][currentColumn] != 0) {
         // if the cell is not 0 but is not the next tile then this path is invalid
         if (board[currentRow][currentColumn] != nextTileNumberToFind) {
             return 0; 
+        }
+
+        if (board[currentRow][currentColumn] == highest) {
+            if (stepCount == size * size) {
+                solution[currentRow][currentColumn] = 'X';
+
+                return 1;
+            }
+
+            return 0;
         }
         
         nextTileNumberToFind++; 
@@ -404,7 +425,97 @@ int solveZipBoardHelper(int board[ZIP_MAX_GRID_SIZE][ZIP_MAX_GRID_SIZE],
 
     // If no solution was found for current path reset cell and return 0
     solution[currentRow][currentColumn] = 0;
+    
     return 0;
+}
+
+int checkRowRecursive(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE], int row, int number, int columnIndex) {
+    if (columnIndex >= SUDOKU_GRID_SIZE) {
+        return 1;
+    } 
+
+    if (board[row][columnIndex] == number) {
+        return 0;
+    }
+
+    return checkRowRecursive(board, row, number, columnIndex + 1);
+}
+
+int checkColumnRecursive(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE], int column, int number, int rowIndex) {
+    if (rowIndex >= SUDOKU_GRID_SIZE) {
+        return 1;
+    } 
+
+    if (board[rowIndex][column] == number) {
+        return 0;
+    }
+
+    return checkColumnRecursive(board, column, number, rowIndex + 1);
+};
+
+int checkSquareRecursive(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE], int squareStartRow, 
+    int squareStartColumn, int number, int squareIndex) {
+    if (squareIndex >= SUDOKU_GRID_SIZE) {
+        return 1;
+    } 
+
+    int currentRow = squareStartRow + (squareIndex / 3);
+    int currentColumn = squareStartColumn + (squareIndex % 3);
+
+    if (board[currentRow][currentColumn] == number) {
+        return 0;
+    }
+
+    return checkSquareRecursive(board, squareStartRow, squareStartColumn, number, squareIndex + 1);
+}
+
+int isValidCell(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE], int row, int column, int number) {
+    // Start from the top left cell of each square
+    int squareStartRow = (row / 3) * 3;
+    int squareStartColumn = (column / 3) * 3;
+
+    return checkRowRecursive(board, row, number, 0) && checkColumnRecursive(board, column, number, 0) &&
+        checkSquareRecursive(board, squareStartRow, squareStartColumn, number, 0);
+}
+
+int tryNumbersForCellRecursive(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE], int row, int column, 
+    int numberToTry) {
+    if (numberToTry > 9) {
+        return 0;
+    }
+
+    if (isValidCell(board, row, column, numberToTry)) {
+        // Try adding the number to the cell
+        board[row][column] = numberToTry;
+
+        if (solveSudokuHelper(board, row, column)) {
+            return 1;
+        }
+
+        // If adding the cell didnt make a valid solution then adding this number causes a wrong solution, a dead end so it should be reseted
+        board[row][column] = 0;
+    }
+
+    return tryNumbersForCellRecursive(board, row, column, numberToTry + 1);
+}
+
+int solveSudokuHelper(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE], int row, int column) {
+    if (row == SUDOKU_GRID_SIZE) {
+        return 1;
+    }
+
+    if (column >= SUDOKU_GRID_SIZE) {
+        return solveSudokuHelper(board, row + 1, 0);
+    }
+
+    int nextRow = (column == 8) ? row + 1 : row;
+    int nextColumn = (column == 8) ? 0 : column + 1;
+
+    if (board[row][column] != 0) {
+        return solveSudokuHelper(board, nextRow, nextColumn);
+    }
+
+    return tryNumbersForCellRecursive(board, row, column, 1);
 }
 
 /***************************
@@ -458,20 +569,20 @@ int task2CheckPalindromeImplementation(int length) {
 void task3GenerateSentencesImplementation(char subjects[][LONGEST_TERM+1], int subjectsCount,
                                             char verbs[][LONGEST_TERM+1], int verbsCount,
                                             char objects[][LONGEST_TERM+1], int objectsCount){
-    int lineIndex = 1;
+    // counter for the printed line
+    int lineIndex[1] = {1};
 
-    generateSubjectsHelper(subjects, verbs, objects, subjectsCount, verbsCount, objectsCount, 0, &lineIndex);
+    generateSubjectsHelper(subjects, verbs, objects, subjectsCount, verbsCount, objectsCount, 0, lineIndex);
 }
 
 
 int task4SolveZipBoardImplementation(int board[ZIP_MAX_GRID_SIZE][ZIP_MAX_GRID_SIZE],
                                     char solution[ZIP_MAX_GRID_SIZE][ZIP_MAX_GRID_SIZE],
                                     int size, int startR, int startC, int highest) {
-    return 0;
+    return solveZipBoardHelper(board, solution, size, startR, startC, 1, 1, highest);
 }
 
 
-int task5SolveSudokuImplementation(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE])
-{
-    return 0;
+int task5SolveSudokuImplementation(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE]) {
+    return solveSudokuHelper(board, 0, 0);
 }
