@@ -18,26 +18,6 @@
 *** DIMENSION PARAMETERS ***
 ****************************/
 
-#include <stdio.h>
-#include <string.h>
-
-
-/***************************
-******** Menu Items ********
-****************************/
-
-#define REVERSE 1
-#define PALINDROME 2
-#define SENTENCES 3
-#define ZIP 4
-#define SUDOKU 5
-#define EXIT 6
-
-
-/***************************
-*** DIMENSION PARAMETERS ***
-****************************/
-
 #define LONGEST_TERM 20
 #define LONGEST_SENTENCE 62
 #define MAX_NUMBER_OF_TERMS 10
@@ -170,7 +150,6 @@ void task1ReversePhrase()
 
     printf("\n");
 }
-
 
 void task2CheckPalindrome()
 {
@@ -317,11 +296,13 @@ void printSudoku(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE])
 void generateObjectsHelper(char subjects[][LONGEST_TERM + 1], char verbs[][LONGEST_TERM + 1], 
     char objects[][LONGEST_TERM + 1], int subjectIndex, int verbIndex, 
     int objectsCount, int objectIndex, int lineIndex[]) {
+        // if object index is equal to count then all objects sequences are printed
         if (objectIndex == objectsCount) {
             return;
         }
 
         printf("%d. %s %s %s\n", lineIndex[0], subjects[subjectIndex], verbs[verbIndex], objects[objectIndex]);
+        // Progress the line counter to print the new line
         lineIndex[0]++;
 
         generateObjectsHelper(subjects, verbs, objects, subjectIndex, verbIndex, objectsCount, 
@@ -331,10 +312,12 @@ void generateObjectsHelper(char subjects[][LONGEST_TERM + 1], char verbs[][LONGE
 void generateVerbsHelper(char subjects[][LONGEST_TERM + 1], char verbs[][LONGEST_TERM + 1], 
     char objects[][LONGEST_TERM + 1], int subjectIndex, int verbsCount, int objectsCount,
      int verbIndex, int lineIndex[]) {
+    // if verb index is equal to count then all verbs sequences are printed
     if (verbIndex == verbsCount) {
         return;
     }
 
+    // Recoursively iterate through each object per verb
     generateObjectsHelper(subjects, verbs, objects, subjectIndex, verbIndex, objectsCount, 
         0, lineIndex);
 
@@ -345,10 +328,12 @@ void generateVerbsHelper(char subjects[][LONGEST_TERM + 1], char verbs[][LONGEST
 void generateSubjectsHelper(char subjects[][LONGEST_TERM + 1], char verbs[][LONGEST_TERM + 1], 
     char objects[][LONGEST_TERM + 1], int subjectsCount, int verbsCount, int objectsCount, int subjectIndex, 
     int lineIndex[]) {
+    // If verb index is equal to count then all verbs sequences are printed
     if (subjectIndex == subjectsCount) {
         return;
     }
 
+    // Recoursively iterate through each verb per subject
     generateVerbsHelper(subjects, verbs, objects, subjectIndex, verbsCount, objectsCount, 
         0, lineIndex);
 
@@ -370,12 +355,13 @@ int solveZipBoardHelper(int board[ZIP_MAX_GRID_SIZE][ZIP_MAX_GRID_SIZE],
     }              
 
     if (board[currentRow][currentColumn] != 0) {
-        // if the cell is not 0 but is not the next tile then this path is invalid
+        // if the cell is not 0 and is not the next tile then this path to solution invalid
         if (board[currentRow][currentColumn] != nextTileNumberToFind) {
             return 0; 
         }
 
         if (board[currentRow][currentColumn] == highest) {
+            // if step count equals size * size then the program iterated through every cell in board
             if (stepCount == size * size) {
                 solution[currentRow][currentColumn] = 'X';
 
@@ -459,6 +445,7 @@ int checkSquareRecursive(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE], int squa
         return 1;
     } 
 
+    // Calculate indexes of cell to check in square based on square index 0-8
     int currentRow = squareStartRow + (squareIndex / 3);
     int currentColumn = squareStartColumn + (squareIndex % 3);
 
@@ -469,6 +456,7 @@ int checkSquareRecursive(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE], int squa
     return checkSquareRecursive(board, squareStartRow, squareStartColumn, number, squareIndex + 1);
 }
 
+// Check row, square, column recursively to check if a number can be put in the specified cell
 int isValidCell(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE], int row, int column, int number) {
     // Start from the top left cell of each square
     int squareStartRow = (row / 3) * 3;
@@ -480,7 +468,8 @@ int isValidCell(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE], int row, int colu
 
 int tryNumbersForCellRecursive(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE], int row, int column, 
     int numberToTry) {
-    if (numberToTry > 9) {
+    // If number is bigger then grid size then no number was a option for this cell indexes
+    if (numberToTry > SUDOKU_GRID_SIZE) {
         return 0;
     }
 
@@ -488,6 +477,7 @@ int tryNumbersForCellRecursive(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE], in
         // Try adding the number to the cell
         board[row][column] = numberToTry;
 
+        // check if from now on adding this cell can solve the suduko
         if (solveSudokuHelper(board, row, column)) {
             return 1;
         }
@@ -500,21 +490,25 @@ int tryNumbersForCellRecursive(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE], in
 }
 
 int solveSudokuHelper(int board[SUDOKU_GRID_SIZE][SUDOKU_GRID_SIZE], int row, int column) {
+    // if row equals grid size the program iterated through cell without failure and found the solution
     if (row == SUDOKU_GRID_SIZE) {
         return 1;
     }
 
+    // if column is in the maximum possible index then proceed to next row and reset column
     if (column >= SUDOKU_GRID_SIZE) {
         return solveSudokuHelper(board, row + 1, 0);
     }
 
-    int nextRow = (column == 8) ? row + 1 : row;
-    int nextColumn = (column == 8) ? 0 : column + 1;
+    int nextRow = (column == SUDOKU_GRID_SIZE - 1) ? row + 1 : row;
+    int nextColumn = (column == SUDOKU_GRID_SIZE - 1) ? 0 : column + 1;
 
     if (board[row][column] != 0) {
+        // If cell is already used proceed solving the next cell 
         return solveSudokuHelper(board, nextRow, nextColumn);
     }
 
+    // if cell isnt taken try putting numbers in it
     return tryNumbersForCellRecursive(board, row, column, 1);
 }
 
