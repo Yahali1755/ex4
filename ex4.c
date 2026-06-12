@@ -455,16 +455,16 @@ void inorder(BSTNode *root, void (*print)(const void *)) {
     if (root == NULL) 
         return;
 
-    preorder(root->left, print);
+    inorder(root->left, print);
     print(root->data);
-    preorder(root->right, print);
+    inorder(root->right, print);
 }
 
 void postorder(BSTNode *root, void (*print)(const void *)) {
     if (root == NULL) 
         return;
-    preorder(root->left, print);
-    preorder(root->right, print);
+    postorder(root->left, print);
+    postorder(root->right, print);
     print(root->data);
 }
 
